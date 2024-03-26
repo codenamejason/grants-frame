@@ -114,31 +114,23 @@ app.frame("/create-profile", async (c) => {
 });
 
 app.transaction("/submit-create-profile", async (c) => {
-  const { frameData, inputText } = c;
-  const userData = await getUserData(frameData?.fid!);
-
-  let userAddress: Address;
-  if (userData.users[0]) {
-    userAddress = userData.users[0].verified_addresses
-      .eth_addresses[0] as Address;
-
-    return c.contract({
-      abi: registryProxyAbi,
-      chainId: `eip155:${baseSepolia.id}`,
-      functionName: "createProfile",
-      to: registryProxyAddress,
-      args: [
-        BigInt(Math.floor(Math.random() * 1000000)),
-        inputText as string,
-        {
-          protocol: BigInt(1),
-          pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
-        },
-        userAddress,
-        [userAddress],
-      ]
-    })
-  }
+  const userData = await getUserData(c.frameData?.fid!);
+  return c.contract({
+    abi: registryProxyAbi,
+    chainId: `eip155:84532`,
+    functionName: "createProfile",
+    to: registryProxyAddress,
+    args: [
+      BigInt(Math.floor(Math.random() * 1000000)),
+      c.inputText as string,
+      {
+        protocol: BigInt(1),
+        pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
+      },
+      userData.users[0].verified_addresses.eth_addresses[0] as Address,
+      [  userData.users[0].verified_addresses.eth_addresses[0] as Address    ],
+    ]
+  })
 });
 
 app.frame("/finish", (c) => {
