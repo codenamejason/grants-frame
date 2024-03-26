@@ -3,21 +3,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { config } from "dotenv";
 import { registryProxyAddress } from "./config.js";
-// import { abi as alloProxyAbi } from "../abis/Allo.js";
 import { abi as registryProxyAbi } from "../abis/Registry.js";
-import { Allo, Registry } from "@allo-team/allo-v2-sdk/";
-// import { CreateProfileArgs } from "@allo-team/allo-v2-sdk/";
-// import { TransactionData } from "@allo-team/allo-v2-sdk/";
 
 config();
-
-const allo = new Allo({ chain: baseSepolia.id });
-
-const alloAddress: `0x${string}` = allo.address();
-console.log(alloAddress);
-
-const registry = new Registry({ chain: baseSepolia.id });
-console.log("registry", registry);
 
 export const walletClient = createWalletClient({
   chain: baseSepolia,

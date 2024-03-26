@@ -1,5 +1,10 @@
 {
-  "name": "grants-frame-2",
+  "name": "grants-frame",
+  "version": "1.0.0",
+  "author": {
+    "name": "jaxcoder",
+    "email": "jax@jaxcoder.xyz"
+  },
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,14 +13,13 @@
     "deploy": "vercel"
   },
   "dependencies": {
-    "@allo-team/allo-v2-sdk": "^1.0.58",
     "frog": "latest",
     "hono": "^4"
   },
   "devDependencies": {
     "tsx": "^4.7.1",
     "typescript": "^5.3.3",
-    "vercel": "^32.4.1",
+    "vercel": "latest",
     "dotenv": "^16.4.5"
   }
 }
