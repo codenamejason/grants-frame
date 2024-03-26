@@ -8,7 +8,8 @@ import {
 } from "../utils/client.js";
 import { Address } from "viem";
 import { baseSepolia } from "viem/chains";
-import { pharoCoverAddress, pharoTokenAddress } from "../utils/config.js";
+import { abi as registryProxyAbi } from "../abis/Registry.js";
+import { registryProxyAddress } from "../utils/config.js";
 
 // Uncomment to use Edge Runtime.
 // export const config = {
@@ -110,6 +111,34 @@ app.frame("/create-profile", async (c) => {
       pharoBalance === 0n && <Button.Reset>Reset</Button.Reset>,
     ],
   });
+});
+
+app.transaction("/submit-create-profile", async (c) => {
+  const { frameData, inputText } = c;
+  const userData = await getUserData(frameData?.fid!);
+
+  let userAddress: Address;
+  if (userData.users[0]) {
+    userAddress = userData.users[0].verified_addresses
+      .eth_addresses[0] as Address;
+
+    return c.contract({
+      abi: registryProxyAbi,
+      chainId: `eip155:${baseSepolia.id}`,
+      functionName: "createProfile",
+      to: registryProxyAddress,
+      args: [
+        BigInt(Math.floor(Math.random() * 1000000)),
+        inputText as string,
+        {
+          protocol: BigInt(1),
+          pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
+        },
+        userAddress,
+        [userAddress],
+      ]
+    })
+  }
 });
 
 app.frame("/finish", (c) => {
