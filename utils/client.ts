@@ -3,21 +3,20 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  parseEther,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { base } from "viem/chains";
 import { config } from "dotenv";
 
 config();
 
 export const walletClient = createWalletClient({
-  chain: baseSepolia,
+  chain: base,
   transport: http(),
 });
 
 export const publicClient = createPublicClient({
-  chain: baseSepolia,
+  chain: base,
   transport: http(),
 });
 

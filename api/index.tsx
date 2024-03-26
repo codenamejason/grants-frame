@@ -7,7 +7,7 @@ import {
   getUserData,
 } from "../utils/client.js";
 import { Address } from "viem";
-import { baseSepolia } from "viem/chains";
+// import { base } from "viem/chains";
 import { abi as registryProxyAbi } from "../abis/Registry.js";
 import { registryProxyAddress } from "../utils/config.js";
 
