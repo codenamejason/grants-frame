@@ -18,17 +18,17 @@ import { base } from "viem/chains";
 // };
 
 type State = {
-  pharoBalance: bigint;
-  liked: boolean;
+  name: string;
 };
 
 export const app = new Frog<{ State: State }>({
   assetsPath: "/",
   basePath: "/api",
   hub: neynar({ apiKey: process.env.NEYNAR_API_KEY as string }),
+  initialState: {
+    name: "anonymous",
+  }
 });
-
-let pharoBalance: bigint = 0n;
 
 app.frame("/", async (c) => {
   const { status } = c;
@@ -69,8 +69,14 @@ app.frame("/create-profile-name", async (c) => {
 
 
 app.frame("/create-profile", async (c) => {
-  const { frameData, verified, inputText } = c;
+  const { frameData, verified, inputText, deriveState } = c;
   const userData = await getUserData(frameData?.fid!);
+
+  const state = deriveState(prevState => {
+    if (inputText) prevState.name = inputText;
+  })
+
+  console.log("userData", { input: c.inputText, userData: userData.users, state });
 
   let userAddress: Address;
 
@@ -101,23 +107,17 @@ app.frame("/create-profile", async (c) => {
   }
 
   return c.res({
-    image: renderImage(
-      pharoBalance > 0
-        ? "You have PHRO tokens. Click next to continue."
-        : "PHRO balance is 0, something went wrong. Please try again.",
+    image: renderImage("Something went wrong. Please try again.",
       `/anubis-helping-shiba.png`
     ),
     intents: [
-      pharoBalance > 0n && <Button action="/participate">Next</Button>,
-      pharoBalance === 0n && <Button.Reset>Reset</Button.Reset>,
+      <Button.Reset>Reset</Button.Reset>,
     ],
   });
 });
 
 app.transaction("/submit-create-profile", async (c) => {
   const userData = await getUserData(c.frameData?.fid!);
-
-  console.log("userData", { input: c.inputText, userData });
 
   return c.contract({
     abi: registryProxyAbi,
