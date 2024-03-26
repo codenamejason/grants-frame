@@ -10,6 +10,7 @@ import { Address } from "viem";
 // import { base } from "viem/chains";
 import { abi as registryProxyAbi } from "../abis/Registry.js";
 import { registryProxyAddress } from "../utils/config.js";
+import { base } from "viem/chains";
 
 // Uncomment to use Edge Runtime.
 // export const config = {
@@ -117,7 +118,7 @@ app.transaction("/submit-create-profile", async (c) => {
   const userData = await getUserData(c.frameData?.fid!);
   return c.contract({
     abi: registryProxyAbi,
-    chainId: `eip155:84532`,
+    chainId: `eip155:${base.id}`,
     functionName: "createProfile",
     to: registryProxyAddress,
     args: [
