@@ -76,7 +76,9 @@ app.frame("/create-profile", async (c) => {
     if (inputText) prevState.name = inputText;
   })
 
-  console.log("userData", { input: c.inputText, userData: userData.users, state });
+  console.log("userData", { input: inputText, userData: userData.users[0], state });
+
+  // todo: save the user data to a database
 
   let userAddress: Address;
 
@@ -118,6 +120,10 @@ app.frame("/create-profile", async (c) => {
 
 app.transaction("/submit-create-profile", async (c) => {
   const userData = await getUserData(c.frameData?.fid!);
+  let userAddress: Address;
+  userAddress = userData.users[0].verified_addresses.eth_addresses[0] as Address;
+
+  console.log("submit-create-profile", { userAddress });
 
   return c.contract({
     abi: registryProxyAbi,
@@ -131,8 +137,8 @@ app.transaction("/submit-create-profile", async (c) => {
         protocol: BigInt(1),
         pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
       },
-      userData.users[0].verified_addresses.eth_addresses[0] as Address,
-      [userData.users[0].verified_addresses.eth_addresses[0] as Address],
+      userAddress,
+      [userAddress],
     ]
   })
 });
