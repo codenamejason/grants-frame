@@ -1,10 +1,5 @@
 {
-  "name": "grants-frame",
-  "version": "1.0.0",
-  "author": {
-    "name": "jaxcoder",
-    "email": "jax@jaxcoder.xyz"
-  },
+  "name": "frameworks-hack",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,12 +9,13 @@
   },
   "dependencies": {
     "frog": "latest",
-    "hono": "^4"
+    "hono": "^4",
+    "viem": "^2.8.18",
+    "dotenv": "16.4.5"
   },
   "devDependencies": {
     "tsx": "^4.7.1",
     "typescript": "^5.3.3",
-    "vercel": "latest",
-    "dotenv": "^16.4.5"
+    "vercel": "latest"
   }
 }

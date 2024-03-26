@@ -3,12 +3,12 @@ import { devtools } from "frog/dev";
 import { neynar } from "frog/hubs";
 import { serveStatic } from "frog/serve-static";
 import { handle } from "frog/vercel";
+import {
+  getUserData,
+} from "../utils/client.js";
 import { Address } from "viem";
 import { baseSepolia } from "viem/chains";
-import { registryProxyAddress } from "../utils/config.js";
-// import { abi as alloProxyAbi } from "../abis/Allo.js";
-import { abi as registryProxyAbi } from "../abis/Registry.js";
-import { getUserData } from "../utils/client.js";
+import { pharoCoverAddress, pharoTokenAddress } from "../utils/config.js";
 
 // Uncomment to use Edge Runtime.
 // export const config = {
@@ -26,18 +26,18 @@ export const app = new Frog<{ State: State }>({
   hub: neynar({ apiKey: process.env.NEYNAR_API_KEY as string }),
 });
 
+let pharoBalance: bigint = 0n;
+
 app.frame("/", async (c) => {
   const { status } = c;
 
   return c.res({
-    image: tempImage(
+    image: renderImage(
       "Welcome! Enter a name to get started creating a profile on Allo v2.",
-      status
+      `/anubis-shiba-sky-underworld.png`
     ),
     intents: [
-      <TextInput placeholder="Enter a name for your profile" />,
-      <Button action="/register-profile">Enter Name</Button>,
-      ,
+      <Button action="/create-profile-name">Next</Button>,
       status === ("response" || "redirect") && (
         <Button.Reset>Reset</Button.Reset>
       ),
@@ -45,59 +45,84 @@ app.frame("/", async (c) => {
   });
 });
 
-app.frame("/register-profile", async (c) => {
-  const { inputText, status, verified } = c;
-  const nameValue = inputText ?? ("" as string);
+app.frame("/create-profile-name", async (c) => {
+  const { status } = c;
 
-  console.log("values shit", {inputText, verified });
+  return c.res({
+    action: "/create-profile",
+    image: renderImage(
+      "Welcome! Enter a name to get started creating a profile on Allo v2.",
+      `/anubis-shiba-sky-underworld.png`
+    ),
+    intents: [
+      
+      <TextInput placeholder="Enter a name for your profile" />,
+      <Button action="/create-profile">Enter Name</Button>,
+      status === ("response" || "redirect") && (
+        <Button.Reset>Reset</Button.Reset>
+      ),
+    ],
+  });
+});
+
+
+app.frame("/create-profile", async (c) => {
+  const { frameData, verified, inputText } = c;
+  const userData = await getUserData(frameData?.fid!);
+
+  let userAddress: Address;
 
   if (!verified) {
     return c.res({
-      image: tempImage("refresh the page", status),
+      image: renderImage(
+        "Not Verified frame message.",
+        `/anubis-putting-river-pyramids-bright-16-9.png`
+      ),
       intents: [<Button.Reset>Reset</Button.Reset>],
     });
   }
 
+  if (userData.users[0]) {
+    userAddress = userData.users[0].verified_addresses
+      .eth_addresses[0] as Address;
+    if (userAddress.length > 2) {
+      return c.res({
+        image: renderImage(`You are ready ${inputText}. Click Submit to continue.`,
+          `/anubis-helping-shiba.png`
+        ),
+        intents: [
+          <Button.Transaction target="/submit-create-profile">Submit</Button.Transaction>,
+          <Button.Reset>Reset</Button.Reset>,
+        ],
+      });
+    }
+  }
+
   return c.res({
-    action: "/submit-register-profile",
-    image: tempImage(`Nice to meet you, ${nameValue}!`, status),
-    intents: [<Button>Submit</Button>],
-  });
-});
-
-app.transaction("/submit-register-profile", async (c) => {
-  const { inputText, frameData } = c;
-  const userData = await getUserData(frameData?.fid!);
-  let userAddress: Address;
-  userAddress = userData.users[0].verified_addresses
-    .eth_addresses[0] as Address;
-
-  const name = inputText;
-
-  userAddress = userData.users[0].verified_addresses
-    .eth_addresses[0] as Address;
-
-  return c.contract({
-    abi: registryProxyAbi,
-    chainId: `eip155:${baseSepolia.id}`,
-    to: registryProxyAddress,
-    functionName: "createProfile",
-    args: [
-      BigInt(Math.floor(Math.random() * 1000000)),
-      name ?? "Anonymous",
-      {
-        protocol: BigInt(1),
-        pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
-      },
-      userAddress,
-      [userAddress],
+    image: renderImage(
+      pharoBalance > 0
+        ? "You have PHRO tokens. Click next to continue."
+        : "PHRO balance is 0, something went wrong. Please try again.",
+      `/anubis-helping-shiba.png`
+    ),
+    intents: [
+      pharoBalance > 0n && <Button action="/participate">Next</Button>,
+      pharoBalance === 0n && <Button.Reset>Reset</Button.Reset>,
     ],
   });
 });
 
 app.frame("/finish", (c) => {
+  const { transactionId } = c;
+
   return c.res({
-    image: tempImage("Thank you for paricipating!", "response"),
+    image: renderImage(
+      `Thank you for participating!\nYour tx hash: ${transactionId?.slice(
+        0,
+        4
+      )}`,
+      `/anubis-putting-river-pyramids-bright-16-9.jpg`
+    ),
     intents: [
       <Button.Link href="https://warpcast.com/jaxcoder.eth/0xf5b0b729">
         Share
@@ -105,41 +130,6 @@ app.frame("/finish", (c) => {
     ],
   });
 });
-
-const tempImage = (
-  content: string,
-  _status: "response" | "redirect" | "initial"
-): JSX.Element => (
-  <div
-    style={{
-      alignItems: "center",
-      background: "linear-gradient(to right, #432889, #17101F)",
-      backgroundSize: "100% 100%",
-      display: "flex",
-      flexDirection: "column",
-      flexWrap: "nowrap",
-      height: "100%",
-      justifyContent: "center",
-      textAlign: "center",
-      width: "100%",
-    }}
-  >
-    <div
-      style={{
-        color: "white",
-        fontSize: 60,
-        fontStyle: "normal",
-        letterSpacing: "-0.025em",
-        lineHeight: 1.4,
-        marginTop: 30,
-        padding: "0 120px",
-        whiteSpace: "pre-wrap",
-      }}
-    >
-      {content}
-    </div>
-  </div>
-);
 
 function renderImage(content: string, image: string | undefined) {
   return (

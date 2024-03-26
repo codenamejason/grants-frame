@@ -1,9 +1,13 @@
-import { Address, createPublicClient, createWalletClient, http } from "viem";
+import {
+  Address,
+  createPublicClient,
+  createWalletClient,
+  http,
+  parseEther,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { config } from "dotenv";
-import { registryProxyAddress } from "./config.js";
-import { abi as registryProxyAbi } from "../abis/Registry.js";
 
 config();
 
@@ -25,23 +29,6 @@ export const adminAccount = privateKeyToAccount(
   process.env.PRIVATE_KEY as `0x${string}`
 );
 
-export const getUserData = async (fid: number) => {
-  const options = {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      api_key: process.env.NEYNAR_API_KEY as string,
-    },
-  };
-
-  const response = await fetch(
-    `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
-    options
-  );
-
-  return response.json();
-};
-
 export const getBalance = async (user: Address, token: Address) => {
   const balance = await publicClient.readContract({
     address: token,
@@ -61,9 +48,9 @@ export const getBalance = async (user: Address, token: Address) => {
   return BigInt(balance);
 };
 
-export const getPriceData = async (token: string) => {
+export const getShibPriceData = async () => {
   const response = await fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${token}&vs_currencies=usd`,
+    "https://api.coingecko.com/api/v3/simple/price?ids=shiba-inu&vs_currencies=usd",
     {
       headers: {
         "x-cg-demo-api-key": process.env.COIN_GECKO_API_KEY as string,
@@ -74,41 +61,19 @@ export const getPriceData = async (token: string) => {
   return response.json();
 };
 
-export const sendCreateProfileTransaction = async (
-  user: Address,
-  name: string
-): Promise<`0x${string}`> => {
-  // const createProfileArgs: CreateProfileArgs = {
-  //   nonce: BigInt(Math.floor(Math.random() * 1000000)),
-  //   name: name,
-  //   metadata: {
-  //     protocol: BigInt(1),
-  //     pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
-  //   },
-  //   owner: user,
-  //   members: [user],
-  // };
+export const getUserData = async (fid: number) => {
+  const options = {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      api_key: process.env.NEYNAR_API_KEY as string,
+    },
+  };
 
-  // note: this will send as raw transaction
-  // const txData: TransactionData = registry.createProfile(createProfileArgs);
+  const response = await fetch(
+    `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+    options
+  );
 
-  // ...
-  const { request } = await publicClient.simulateContract({
-    abi: registryProxyAbi,
-    address: registryProxyAddress,
-    account: adminAccount,
-    functionName: "createProfile",
-    args: [
-      BigInt(Math.floor(Math.random() * 1000000)),
-      name,
-      {
-        protocol: BigInt(1),
-        pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
-      },
-      user,
-      [user],
-    ],
-  });
-
-  return await walletClient.writeContract(request);
+  return response.json();
 };
