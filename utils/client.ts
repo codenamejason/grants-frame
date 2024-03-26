@@ -1,22 +1,23 @@
-import {
-  Address,
-  createPublicClient,
-  createWalletClient,
-  http,
-  parseEther,
-} from "viem";
+import { Address, createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { config } from "dotenv";
-import {
-  pharoTokenAddress,
-  defaultTokensToMint,
-  pharoCoverAddress,
-} from "./config.js";
-// import { abi as pharoTokenAbi } from "../abis/PharoToken.js";
-// import { abi as pharoCoverAbi } from "../abis/PharoCover.js";
+import { registryProxyAddress } from "./config.js";
+// import { abi as alloProxyAbi } from "../abis/Allo.js";
+import { abi as registryProxyAbi } from "../abis/Registry.js";
+import { Allo, Registry } from "@allo-team/allo-v2-sdk/";
+// import { CreateProfileArgs } from "@allo-team/allo-v2-sdk/";
+// import { TransactionData } from "@allo-team/allo-v2-sdk/";
 
 config();
+
+const allo = new Allo({ chain: baseSepolia.id });
+
+const alloAddress: `0x${string}` = allo.address();
+console.log(alloAddress);
+
+const registry = new Registry({ chain: baseSepolia.id });
+console.log("registry", registry);
 
 export const walletClient = createWalletClient({
   chain: baseSepolia,
@@ -36,21 +37,26 @@ export const adminAccount = privateKeyToAccount(
   process.env.PRIVATE_KEY as `0x${string}`
 );
 
-// export const sendMintTransaction = async (to: Address, _value = BigInt(0)) => {
-//   const { request } = await publicClient.simulateContract({
-//     account: adminAccount,
-//     address: pharoTokenAddress,
-//     abi: pharoTokenAbi,
-//     functionName: "mintTokensTo",
-//     args: [to, parseEther(defaultTokensToMint.toString())],
-//   });
+export const getUserData = async (fid: number) => {
+  const options = {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      api_key: process.env.NEYNAR_API_KEY as string,
+    },
+  };
 
-//   return await walletClient.writeContract(request);
-// };
+  const response = await fetch(
+    `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+    options
+  );
 
-export const getPharoBalance = async (user: Address) => {
+  return response.json();
+};
+
+export const getBalance = async (user: Address, token: Address) => {
   const balance = await publicClient.readContract({
-    address: pharoTokenAddress,
+    address: token,
     abi: [
       {
         type: "function",
@@ -67,9 +73,9 @@ export const getPharoBalance = async (user: Address) => {
   return BigInt(balance);
 };
 
-export const getShibPriceData = async () => {
+export const getPriceData = async (token: string) => {
   const response = await fetch(
-    "https://api.coingecko.com/api/v3/simple/price?ids=shiba-inu&vs_currencies=usd",
+    `https://api.coingecko.com/api/v3/simple/price?ids=${token}&vs_currencies=usd`,
     {
       headers: {
         "x-cg-demo-api-key": process.env.COIN_GECKO_API_KEY as string,
@@ -80,56 +86,41 @@ export const getShibPriceData = async () => {
   return response.json();
 };
 
-// export const sendPolicyTransaction = async (
-//   rateEstimate: bigint,
-//   coverBuyer: Address
-// ) => {
-//   const { request } = await publicClient.simulateContract({
-//     address: pharoCoverAddress,
-//     abi: pharoCoverAbi,
-//     functionName: "createCoverPolicy",
-//     // [coverBuyer, token, pharoId, {signedPolicyData}]
-//     args: [
-//       coverBuyer,
-//       pharoTokenAddress,
-//       BigInt(0),
-//       {
-//         minCover: BigInt(3000),
-//         premium: BigInt(1500),
-//         rateEstimate: rateEstimate,
-//         lengthOfCover: BigInt(604800), // seconds in a week
-//       },
-//     ],
-//     account: adminAccount,
-//   });
+export const sendCreateProfileTransaction = async (
+  user: Address,
+  name: string
+): Promise<`0x${string}`> => {
+  // const createProfileArgs: CreateProfileArgs = {
+  //   nonce: BigInt(Math.floor(Math.random() * 1000000)),
+  //   name: name,
+  //   metadata: {
+  //     protocol: BigInt(1),
+  //     pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
+  //   },
+  //   owner: user,
+  //   members: [user],
+  // };
 
-//   return await walletClient.writeContract(request);
-// };
+  // note: this will send as raw transaction
+  // const txData: TransactionData = registry.createProfile(createProfileArgs);
 
-// export const hasPolicy = async (coverBuyer: Address) => {
-//   const policy = await publicClient.readContract({
-//     address: pharoCoverAddress,
-//     abi: pharoCoverAbi,
-//     functionName: "getBuyerPoliciesCount",
-//     args: [coverBuyer, [BigInt(0)]],
-//   });
+  // ...
+  const { request } = await publicClient.simulateContract({
+    abi: registryProxyAbi,
+    address: registryProxyAddress,
+    account: adminAccount,
+    functionName: "createProfile",
+    args: [
+      BigInt(Math.floor(Math.random() * 1000000)),
+      name,
+      {
+        protocol: BigInt(1),
+        pointer: "bafybeia4khbew3r2mkflyn7nzlvfzcb3qpfeftz5ivpzfwn77ollj47gqi",
+      },
+      user,
+      [user],
+    ],
+  });
 
-//   return policy >= BigInt(0);
-// };
-
-export const getUserData = async (fid: number) => {
-  const options = {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      api_key: process.env.NEYNAR_API_KEY as string,
-    },
-  };
-
-  const response = await fetch(
-    `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
-    options
-  );
-
-  return response.json();
+  return await walletClient.writeContract(request);
 };
